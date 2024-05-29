@@ -49,6 +49,7 @@
     "@uiw/formatter": "^2.0.2",
     "@uiw/react-date-input": "^4.21.27",
     "@uiw/react-date-picker": "^4.21.27",
+    "axios": "^1.7.2",
     "bn.js": "^5.2.1",
     "bs58": "^5.0.0",
     "immer": "^10.0.1",
