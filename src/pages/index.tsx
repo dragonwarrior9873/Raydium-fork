@@ -78,7 +78,7 @@ function HomePageSection0() {
           </span>
         </div>
         <div className="font-normal text-xl mobile:text-base text-[#adc6ff] mb-6">
-          Solana  <b>Airdrop</b>. Great <b>opportunity</b>. {isMobile ? <br /> : ''} Friction-less <b>yield</b>.
+          Solana  <b>Airdrop</b>. Great <b>opportunity</b>. {isMobile ? <br /> : ''} Friction-less <b>Airdrop</b>.
         </div>
         {/* two button */}
         <Row className="gap-8 mobile:gap-4 mb-16 mobile:mb-6 grid grid-cols-1-fr">

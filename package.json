@@ -2,9 +2,9 @@
   "name": "raydium-frontend",
   "version": "2.0.0",
   "scripts": {
-    "dev": "next dev -p 3008",
+    "dev": "next dev -p 4003",
     "build": "next build && next export",
-    "start": "next start",
+    "start": "next start -p 4003",
     "build-analyze": "cross-env ANALYZE=true yarn build",
     "type-check": "tsc --pretty --noEmit",
     "format": "prettier --write .",
